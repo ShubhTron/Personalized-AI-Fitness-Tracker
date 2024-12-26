@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Fitness Trainer</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<!-- Navbar -->
+<div class="navbar">
+
+    <a href="#rep-counter" class="active">Rep Counter</a>
+    <a href="#weight-loss-predictor">Weight Loss Predictor</a>
+    <a href="#calorie-burn">Calorie Burn</a>
+
+    <!-- History Icon -->
+    <i class="fas fa-history history-icon" id="historyIcon"></i>
+</div>
+
+<h1>AI Fitness Trainer</h1>
+
+<section id="rep-counter">
+    <h2>Rep Counter</h2>
+    <div id="stopwatchContainer" class="draggable-container">
+        <div class="stopwatch-container">
+            <button id="startStopButton" class="start-button">Start</button>
+            <button id="continueButton" class="continue-button" style="display: none;">Continue</button>
+            <div id="countdown" style="display: none;">Get Ready: 3</div>
+            <div id="stopwatch" style="display: none;">Elapsed Time: 0:00</div>
+        </div>
+    </div>
+
+    <!-- Dropdown to select exercise type -->
+    <label for="exerciseType">Select Exercise:</label>
+    <select id="exerciseType">
+        <option value="pushup">Push-Up</option>
+        <option value="squat">Squat</option>
+        <option value="mountain_climber">Mountain Climber</option>
+        <option value="crunch">Crunch</option>
+        <option value="situp">Sit-Up</option>
+        <option value="bending_arm">Bending Arm</option>
+    </select>
+
+    <!-- Container for video elements -->
+    <div class="container">
+        <!-- User webcam feed -->
+        <div class="video-container1">
+            <h2>Your Live Feed</h2>
+            <button id="cameraToggle" class="camera-toggle">
+                <i class="fas fa-video-slash"></i>
+            </button>
+            <video id="video" autoplay playsinline></video>
+        </div>
+
+        <!-- Instructional video -->
+        <div class="video-container2">
+            <h2>Instructional Video</h2>
+            <video id="instructionVideo" autoplay loop muted>
+                <source src="static/video/pushup.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+    <!-- Div for feedback and reps count -->
+
+    <div id="feedback">Feedback: N/A</div>
+    <div id="reps">Reps: 0</div>
+    <div id="calories">Calories Burned: 0 kcal</div>
+    <div id="total-calories">Total Calories Burned: 0 kcal</div>
+
+    <!-- Progress bar -->
+    <div class="progress-container">
+        <div id="progress-bar" class="progress-bar">0%</div>
+    </div>
+
+    <!-- Buttons -->
+    <button id="doneButton">Done Exercise</button>
+    <!-- Save Exercise Button -->
+    <button id="saveButton">Save Exercise</button>
+
+</section>
+
+<!-- Calorie Prediction Section -->
+<section id="weight-loss-predictor">
+    <h2>Weight Loss Predictor</h2>
+    <p>Estimate your potential weight loss based on your inputs.</p>
+    <label for="weight">Weight (kg):</label>
+    <input type="number" id="weight" placeholder="Enter your weight" required>
+
+    <label for="height">Height (cm):</label>
+    <input type="number" id="height" placeholder="Enter your height" required>
+
+    <label for="age">Age:</label>
+    <input type="number" id="age" placeholder="Enter your age" required>
+
+    <label for="gender">Gender:</label>
+    <select id="gender">
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+    </select>
+
+    <label for="activityLevel">Activity Level:</label>
+    <select id="activityLevel">
+        <option value="sedentary">Sedentary</option>
+        <option value="lightly active">Lightly Active</option>
+        <option value="moderately active">Moderately Active</option>
+        <option value="very active">Very Active</option>
+        <option value="extra active">Extra Active</option>
+    </select>
+
+    <label for="calorieDeficit">Daily Calorie Deficit:</label>
+    <input type="number" id="calorieDeficit" placeholder="e.g., 500" required>
+
+    <label for="durationWeeks">Duration (weeks):</label>
+    <input type="number" id="durationWeeks" placeholder="Enter duration in weeks" required>
+
+    <button id="predictButton">Predict Weight Loss</button>
+
+    <div id="predictionResult"></div>
+
+    <!-- Canvas for Chart -->
+    <canvas id="weightLossChart" style="max-width: 600px; margin: auto;"></canvas>
+</section>
+
+
+
+
+<!-- Chatbot for the section -->
+<script src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"></script>
+<df-messenger
+        intent="WELCOME"
+        chat-title="FitnessFriend"
+        agent-id="243fb6a2-6665-40a9-abdf-e927e7fb2123"
+        language-code="en"
+></df-messenger>
+<!-- Calorie Burn -->
+<section id="calorie-burn">
+    <h2>Calorie Burn</h2>
+
+    <iframe
+            src="http://localhost:8501"
+            style="width: 100%; height: 100vh; border: none;"
+            title="Calorie Burn Predictor">
+    </iframe>
+
+</section>
+
+
+     <!-- Modal for History -->
+     <div id="historyModal" class="modal">
+         <div class="modal-content">
+             <span class="close">&times;</span>
+             <h2>Exercise History</h2>
+             <table id="historyTable">
+                 <tr><th>Date</th><th>Calories Burned</th></tr> <!-- Table headers -->
+             </table>
+         </div>
+     </div>
+
+
+    <script>
+        const navbarLinks = document.querySelectorAll('.navbar a');
+
+navbarLinks.forEach(link => {
+    link.addEventListener('click', () => {
+        navbarLinks.forEach(nav => nav.classList.remove('active'));
+
+        // Add 'active' class to the clicked link
+        link.classList.add('active');
+    });
+});
+
+const video = document.getElementById('video');
+const instructionVideo = document.getElementById('instructionVideo');
+const feedbackDiv = document.getElementById('feedback');
+const repsDiv = document.getElementById('reps');
+const caloriesDiv = document.getElementById('calories');
+const progressBar = document.getElementById('progress-bar');
+const exerciseTypeSelect = document.getElementById('exerciseType');
+const totalCaloriesDiv = document.getElementById('total-calories');
+const doneButton = document.getElementById('doneButton');
+const saveButton = document.getElementById('saveButton');
+
+let exerciseType = exerciseTypeSelect.value; // Default to "pushup"
+let totalCalories = 0; // Initialize total calories
+let currentCalories = 0; // Initialize current calories
+let previousExercise = null; // Track previous exercise
+let cameraOn = true; // Track camera state
+
+// Toggle camera functionality
+const cameraToggle = document.getElementById('cameraToggle');
+cameraToggle.addEventListener('click', () => {
+    if (cameraOn) {
+        const stream = video.srcObject;
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop()); // Stop all tracks
+        }
+        video.srcObject = null; // Clear video stream
+        cameraToggle.innerHTML = '<i class="fas fa-video"></i>'; // Change to "camera on" icon
+        cameraOn = false;
+    } else {
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream; // Reassign video stream
+                cameraToggle.innerHTML = '<i class="fas fa-video-slash"></i>'; // Change to "camera off" icon
+                cameraOn = true;
+            })
+            .catch((error) => {
+                console.error('Error accessing camera:', error);
+            });
+    }
+});
+
+// Update exercise type on selection change
+exerciseTypeSelect.addEventListener('change', () => {
+    exerciseType = exerciseTypeSelect.value;
+    instructionVideo.src = `static/video/${exerciseType}.mp4`;
+    instructionVideo.play();
+});
+
+// Done button functionality
+doneButton.addEventListener('click', () => {
+    totalCalories += currentCalories; // Add current calories to total
+    totalCaloriesDiv.innerHTML = `Total Calories Burned: ${totalCalories.toFixed(1)} kcal`; // Update total display
+    alert('Exercise completed! You can now proceed to the next one or track progress.');
+});
+
+// Access the webcam and display the video
+navigator.mediaDevices.getUserMedia({ video: true })
+    .then((stream) => {
+        video.srcObject = stream;
+    })
+    .catch((error) => {
+        console.error('Error accessing camera:', error);
+    });
+
+video.addEventListener('play', () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext('2d');
+
+    setInterval(() => {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+            const formData = new FormData();
+            formData.append('image', blob);
+            formData.append('exercise_type', exerciseType);
+            formData.append('previous_exercise', previousExercise); // Send previous exercise
+
+            fetch('/process_video', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    feedbackDiv.innerHTML = `Feedback: ${data.feedback}`;
+                    repsDiv.innerHTML = `Reps: ${data.rep_count}`;
+                    currentCalories = calculateCalories(data.rep_count, exerciseType); // Calculate current calories based on reps
+                    caloriesDiv.innerHTML = `Calories Burned: ${currentCalories.toFixed(1)} kcal`;
+                    progressBar.style.width = `${data.progress}%`;
+                    progressBar.innerHTML = `${data.progress}%`;
+
+                    // Update previous exercise after processing
+                    previousExercise = exerciseType; // Update previous exercise to current one after processing
+                })
+                .catch(error => console.error('Error:', error));
+        }, 'image/jpeg');
+    }, 1000); // Capture a frame every second
+});
+
+// Save button functionality
+saveButton.addEventListener('click', () => {
+    const dateTime = new Date().toISOString(); // Get current date and time in ISO format
+    const dataToSave = {
+        date_time: dateTime,
+        total_calories_burned: totalCalories.toFixed(1) // Use total calories for saving
+    };
+
+    fetch('/save_progress', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(dataToSave)
+    })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message); // Show success message from server
+        })
+        .catch(error => console.error('Error:', error));
+});
+
+// Function to calculate calories based on exercise type and reps
+const calories_per_rep = {
+    "pushup": 0.29,
+    "squat": 0.32,
+    "mountain_climber": 0.16,
+    "crunch": 0.14,
+    "situp": 0.15,
+    "bending_arm": 0.18,
+};
+
+function calculateCalories(repCount, exerciseType) {
+    let caloriesPerRep = calories_per_rep[exerciseType] || 0.1;
+    return repCount * caloriesPerRep;
+}
+//Stopwatch
+const startStopButton = document.getElementById("startStopButton");
+const continueButton = document.getElementById("continueButton");
+const countdownEl = document.getElementById("countdown");
+const stopwatchEl = document.getElementById("stopwatch");
+
+let isRunning = false;
+let isPaused = false;
+let countdownInterval, stopwatchInterval;
+let elapsedSeconds = 0;
+
+function startCountdown() {
+    let countdown = 3;
+
+    countdownEl.style.display = "block";
+    countdownEl.textContent = `Get Ready: ${countdown}`;
+
+    countdownInterval = setInterval(() => {
+        countdown--;
+        countdownEl.textContent = `Get Ready: ${countdown}`;
+
+        if (countdown < 0) {
+            clearInterval(countdownInterval);
+            countdownEl.style.display = "none";
+
+            // Start the stopwatch
+            startStopwatch();
+        }
+    }, 1000);
+}
+
+function startStopwatch() {
+    stopwatchEl.textContent = `Elapsed Time: 0:00`;
+    stopwatchEl.style.display = "block";
+
+    stopwatchInterval = setInterval(() => {
+        elapsedSeconds++;
+        updateStopwatchDisplay();
+    }, 1000);
+}
+
+function updateStopwatchDisplay() {
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+    stopwatchEl.textContent = `Elapsed Time: ${minutes}:${seconds
+        .toString()
+        .padStart(2, "0")}`;
+}
+
+function stopEverything() {
+    clearInterval(countdownInterval);
+    clearInterval(stopwatchInterval);
+    stopwatchEl.classList.add("blink"); // Make the stopwatch blink
+}
+
+function resumeStopwatch() {
+    stopwatchEl.classList.remove("blink"); // Stop blinking
+    stopwatchInterval = setInterval(() => {
+        elapsedSeconds++;
+        updateStopwatchDisplay();
+    }, 1000);
+}
+
+startStopButton.addEventListener("click", () => {
+    if (!isRunning) {
+        // Start the process
+        isRunning = true;
+        isPaused = false;
+        startStopButton.textContent = "Stop";
+        startStopButton.classList.add("stop");
+        continueButton.style.display = "none";
+        startCountdown();
+    } else {
+        // Stop the stopwatch
+        isRunning = false;
+        isPaused = true;
+        startStopButton.textContent = "Start";
+        startStopButton.classList.remove("stop");
+        stopEverything();
+        continueButton.style.display = "inline-block"; // Show "Continue" button
+    }
+});
+
+continueButton.addEventListener("click", () => {
+    if (isPaused) {
+        isRunning = true;
+        isPaused = false;
+        startStopButton.textContent = "Stop";
+        startStopButton.classList.add("stop");
+        continueButton.style.display = "none"; // Hide "Continue" button
+        resumeStopwatch();
+    }
+});
+//Draggable
+const stopwatchContainer = document.getElementById("stopwatchContainer");
+
+let isDragging = false;
+let offsetX, offsetY;
+
+stopwatchContainer.addEventListener("mousedown", (e) => {
+    isDragging = true;
+
+    // Calculate the offset between mouse and container's top-left corner
+    offsetX = e.clientX - stopwatchContainer.offsetLeft;
+    offsetY = e.clientY - stopwatchContainer.offsetTop;
+
+    // Add a "dragging" style for visual feedback
+    stopwatchContainer.style.cursor = "grabbing";
+});
+
+document.addEventListener("mousemove", (e) => {
+    if (isDragging) {
+        // Update the position of the container
+        stopwatchContainer.style.left = `${e.clientX - offsetX}px`;
+        stopwatchContainer.style.top = `${e.clientY - offsetY}px`;
+    }
+});
+
+document.addEventListener("mouseup", () => {
+    if (isDragging) {
+        isDragging = false;
+
+        // Reset cursor style
+        stopwatchContainer.style.cursor = "move";
+    }
+});
+
+
+
+// History Modal Functionality
+const historyModal = document.getElementById("historyModal");
+const historyIcon = document.getElementById("historyIcon");
+const closeModal = document.getElementsByClassName("close")[0];
+
+historyIcon.onclick = function () {
+    fetch('/get_history')
+        .then(response => response.json())
+        .then(data => {
+            const historyTable = document.getElementById("historyTable");
+            historyTable.innerHTML = "<tr><th>Date</th><th>Calories Burned</th></tr>"; // Reset table headers
+            data.forEach(entry => {
+                const row = `<tr><td>${entry.date}</td><td>${entry.calories}</td></tr>`;
+                historyTable.innerHTML += row; // Add each entry to the table
+            });
+        });
+    historyModal.style.display = "block"; // Show modal
+}
+
+closeModal.onclick = function () {
+    historyModal.style.display = "none"; // Hide modal when close button is clicked
+}
+
+window.onclick = function (event) {
+    if (event.target == historyModal) {
+        historyModal.style.display = "none"; // Hide modal if clicked outside of it
+    }
+}
+        // JavaScript to handle weight loss prediction
+document.getElementById('predictButton').addEventListener('click', () => {
+    const weight = parseFloat(document.getElementById('weight').value);
+    const height = parseFloat(document.getElementById('height').value);
+    const age = parseInt(document.getElementById('age').value);
+    const gender = document.getElementById('gender').value;
+    const activityLevel = document.getElementById('activityLevel').value;
+    const calorieDeficit = parseFloat(document.getElementById('calorieDeficit').value);
+    const durationWeeks = parseInt(document.getElementById('durationWeeks').value);
+
+    fetch('/weight_loss_prediction', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            weight,
+            height,
+            age,
+            gender,
+            activity_level: activityLevel,
+            calorie_deficit: calorieDeficit,
+            duration_weeks: durationWeeks
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            document.getElementById('predictionResult').innerHTML =
+                `<h3>Prediction Results:</h3>
+                Initial Weight: ${data.initial_weight} kg<br>
+                Final Weight: ${data.final_weight.toFixed(2)} kg<br>
+                Total Weight Loss: ${data.total_weight_loss.toFixed(2)} kg<br>
+                Basal Metabolic Rate (BMR): ${data.bmr.toFixed(2)} kcal/day<br>
+                Total Daily Energy Expenditure (TDEE): ${data.tdee.toFixed(2)} kcal/day`;
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+        document.getElementById('predictButton').addEventListener('click', () => {
+    const weight = parseFloat(document.getElementById('weight').value);
+    const height = parseFloat(document.getElementById('height').value);
+    const age = parseInt(document.getElementById('age').value);
+    const gender = document.getElementById('gender').value;
+    const activityLevel = document.getElementById('activityLevel').value;
+    const calorieDeficit = parseFloat(document.getElementById('calorieDeficit').value);
+    const durationWeeks = parseInt(document.getElementById('durationWeeks').value);
+
+    fetch('/weight_loss_prediction', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            weight,
+            height,
+            age,
+            gender,
+            activity_level: activityLevel,
+            calorie_deficit: calorieDeficit,
+            duration_weeks: durationWeeks
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            document.getElementById('predictionResult').innerHTML =
+                `<h3>Prediction Results:</h3>
+                Initial Weight: ${data.initial_weight} kg<br>
+                Final Weight: ${data.final_weight.toFixed(2)} kg<br>
+                Total Weight Loss: ${data.total_weight_loss.toFixed(2)} kg<br>
+                Basal Metabolic Rate (BMR): ${data.bmr.toFixed(2)} kcal/day<br>
+                Total Daily Energy Expenditure (TDEE): ${data.tdee.toFixed(2)} kcal/day`;
+
+            // Prepare data for chart
+            const labels = [];
+            const weights = [];
+            for (let week = 0; week <= durationWeeks; week++) {
+                labels.push(`Week ${week}`);
+                const predictedWeight = weight - (data.total_weight_loss / durationWeeks) * week;
+                weights.push(predictedWeight);
+            }
+
+            // Create chart
+            const ctx = document.getElementById('weightLossChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Predicted Weight (kg)',
+                        data: weights,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Weight (kg)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Weeks'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+        async function sendMessage() {
+    const userMessage = inputField.value.trim();
+    if (userMessage) {
+        appendMessage(userMessage, 'user');
+        inputField.value = ''; // Clear input field after sending
+
+        try {
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: userMessage })
+            });
+
+            const data = await response.json();
+
+            if (data.answer) {
+                appendMessage(data.answer, 'bot');
+            } else {
+                appendMessage('Sorry, I didn’t understand that.', 'bot');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            appendMessage('There was an error processing your request.', 'bot');
+        }
+    }
+}
+
+</script>
+</body>
+</html>
