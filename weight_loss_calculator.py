@@ -33,8 +33,7 @@ def weight_loss_prediction(weight, height, age, gender, activity_level, calorie_
 
     # Calorie deficit per week and weight loss
     weekly_deficit = calorie_deficit * 7  # Calories per week
-    weight_loss_per_week = weekly_deficit / 7700  # 1 kg of fat ≈ 7700 kcal
-
+    weight_loss_per_week = weekly_deficit / 7700
     # Predict total weight loss over the duration
     total_weight_loss = weight_loss_per_week * duration_weeks
 

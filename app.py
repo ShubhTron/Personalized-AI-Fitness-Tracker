@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, render_template
 from ai_model import process_frame  # Assume this handles calorie calculations
 from datetime import datetime
 from weight_loss_calculator import weight_loss_prediction  # Import the prediction function
+from waitress import serve
 
 app = Flask(__name__)
 
@@ -124,4 +125,4 @@ def weight_loss():
 
 if __name__ == '__main__':
     init_db()  # Initialize the database when starting the app
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

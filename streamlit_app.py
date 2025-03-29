@@ -2,7 +2,20 @@ import streamlit as st
 import pandas as pd
 import joblib
 import streamlit.components.v1 as components
+import streamlit as st
+import requests
 
+# Replace with Render backend URL
+BACKEND_URL = "https://your-backend-service.onrender.com"
+
+st.title("My Streamlit App")
+
+response = requests.get(f"{BACKEND_URL}/api/data")
+if response.status_code == 200:
+    data = response.json()
+    st.write("Data from backend:", data)
+else:
+    st.error("Failed to fetch data")
 # Function for loading model
 @st.cache_data
 def load_model():
